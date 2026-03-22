@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lord of the Flies: Interactive Map</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #002b44; /* Dark ocean fallback */
+            color: white; 
+            font-family: 'Courier New', Courier, monospace; 
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 1000px;
+            height: 700px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 5px solid #222;
+            /* IMAGE LOADING HERE */
+            background-image: url('island.png'); 
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-color: #006994;
+        }
+
+        canvas {
+            display: block;
+            background: transparent; /* Vital: lets the image show through */
+            cursor: crosshair;
+        }
+
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            border-top: 3px solid #f4a460;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        h2 { margin: 0 0 5px 0; color: #f4a460; text-transform: uppercase; font-size: 1.2rem; }
+        p { margin: 0; font-size: 1rem; color: #ccc; line-height: 1.4; }
+
+        .controls-hint {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 11px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="controls-hint">WASD to Move | SHIFT to Sprint</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <h2 id="loc-name">The Horizon</h2>
+            <p id="echo-text">Approach the island to discover its secrets...</p>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const locDisplay = document.getElementById("loc-name");
+    const echoDisplay = document.getElementById("echo-text");
+
+    canvas.width = 1000;
+    canvas.height = 700;
+
+    const player = {
+        x: 100,
+        y: 350,
+        size: 8,
+        speed: 3,
+        color: "#00ffcc" // Bright teal so it's visible against the jungle
+    };
+
+    // Coordinates adjusted to match the visual layout of the generated map
+    const landmarks = [
+        { name: "The Mountain Top", x: 280, y: 240, r: 80, msg: "The signal fire flickers weakly. Higher up, something moves in the shadows... a fallen parachutist?" },
+        { name: "The Platform", x: 250, y: 520, r: 70, msg: "The assembly meets here. You see the white conch gleaming. 'We have to have rules and obey them.'" },
+        { name: "The Scar", x: 450, y: 450, r: 90, msg: "A jagged rip in the jungle where the plane crashed. The heat is stifling and the ground is scorched." },
+        { name: "The Glade", x: 630, y: 380, r: 70, msg: "A gift for the darkness. A pig's head on a stick swarms with flies. 'I'm part of you,' it whispers." },
+        { name: "Castle Rock", x: 780, y: 580, r: 80, msg: "A fortress of red rock. You hear the sound of a lever prying a boulder loose. This is the end of innocence." }
+    ];
+
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+    function update() {
+        let currentSpeed = keys['shift'] ? player.speed * 2 : player.speed;
+
+        if (keys['w'] || keys['arrowup']) player.y -= currentSpeed;
+        if (keys['s'] || keys['arrowdown']) player.y += currentSpeed;
+        if (keys['a'] || keys['arrowleft']) player.x -= currentSpeed;
+        if (keys['d'] || keys['arrowright']) player.x += currentSpeed;
+
+        player.x = Math.max(0, Math.min(canvas.width, player.x));
+        player.y = Math.max(0, Math.min(canvas.height, player.y));
+
+        let found = false;
+        landmarks.forEach(point => {
+            let dist = Math.hypot(player.x - point.x, player.y - point.y);
+            if (dist < point.r) {
+                locDisplay.innerText = point.name;
+                echoDisplay.innerText = point.msg;
+                found = true;
+            }
+        });
+
+        if (!found) {
+            locDisplay.innerText = "The Jungle";
+            echoDisplay.innerText = "The sound of cicadas fills the air. Explore the landmarks.";
+        }
+    }
+
+    function drawPlayer() {
+        // Glowing Player Dot
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = player.color;
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function gameLoop() {
+        // ONLY clearRect here. If you use fillRect, you will hide the image!
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        update();
+        drawPlayer();
+        
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>
+</body>
+</html>
